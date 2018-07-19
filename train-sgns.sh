@@ -1,0 +1,51 @@
+HYPERWORD_PATH="/home/hellrich/hyperwords/omerlevy-hyperwords-688addd64ca2"
+WINDOW="5"
+DIM="500"
+
+function do_sgns {
+        local source_path=$1
+        local target_path=$2
+        local deterministic_subsample=$3
+        local weighted_window=$4
+        
+	mkdir -p $target_path
+        #SGNS
+        word2vecw/word2vec -train $source_path -output $target_path/sgns.words -size $DIM -window $WINDOW -sample 1e-4 -negative 5 -hs 0 -binary 0 -cbow 0 -min-count $MIN -ds $deterministic_subsample -ww $weighted_window
+        python $HYPERWORD_PATH/hyperwords/text2numpy.py $target_path/sgns.words
+
+        echo "finished $target_path sgns"
+}
+
+
+#####################
+
+source ~/.bashrc && source activate jeseme
+
+corpus=$1
+start=$2
+end=$3
+MIN=$4
+
+for i in $(seq $start $end)
+do
+        do_sgns /home/hellrich/tmp/emnlp2018/$corpus /home/hellrich/tmp/emnlp2018/sgns/$corpus/ps_dw_v$i 0 0
+done
+
+for i in $(seq $start $end)
+do
+        #probabilistic window
+        #do_sgns /home/hellrich/tmp/emnlp2018/$corpus /home/hellrich/tmp/emnlp2018/sgns/$corpus/ps_dw_v$i 0 0
+        do_sgns /home/hellrich/tmp/emnlp2018/$corpus /home/hellrich/tmp/emnlp2018/sgns/$corpus/ws_dw_v$i 1 0
+        do_sgns /home/hellrich/tmp/emnlp2018/$corpus /home/hellrich/tmp/emnlp2018/sgns/$corpus/ns_dw_v$i 2 0
+       
+        #weighted window
+        do_sgns /home/hellrich/tmp/emnlp2018/$corpus /home/hellrich/tmp/emnlp2018/sgns/$corpus/ps_ww_v$i 0 1
+        do_sgns /home/hellrich/tmp/emnlp2018/$corpus /home/hellrich/tmp/emnlp2018/sgns/$corpus/ws_ww_v$i 1 1
+        do_sgns /home/hellrich/tmp/emnlp2018/$corpus /home/hellrich/tmp/emnlp2018/sgns/$corpus/ns_ww_v$i 2 1
+        
+        #uniform window
+        do_sgns /home/hellrich/tmp/emnlp2018/$corpus /home/hellrich/tmp/emnlp2018/sgns/$corpus/ps_uw_v$i 0 2
+        do_sgns /home/hellrich/tmp/emnlp2018/$corpus /home/hellrich/tmp/emnlp2018/sgns/$corpus/ws_uw_v$i 1 2
+        do_sgns /home/hellrich/tmp/emnlp2018/$corpus /home/hellrich/tmp/emnlp2018/sgns/$corpus/ns_uw_v$i 2 2     
+done
+

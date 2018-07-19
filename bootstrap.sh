@@ -1,0 +1,1 @@
+python bootstrap.py $1 | shuf > $2

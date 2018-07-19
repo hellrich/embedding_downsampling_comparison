@@ -1,0 +1,1 @@
+python coha_converter.py --lower /data/data_corpora/coha/wlp/*_200{0,1,2,3,4,5,6,7,8,9}_*txt | sed "s/[^[:alnum:]]*[ \t\n\r][^[:alnum:]]*/ /g;s/[^a-z0-9]*$/ /g;s/  */ /g;/^\s*$/d" > ~/tmp/emnlp2018/coha
