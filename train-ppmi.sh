@@ -1,3 +1,4 @@
+DIR="/data/data_hellrich/tmp/emnlp2018/"
 HYPERWORD_PATH="/home/hellrich/hyperwords/omerlevy-hyperwords-688addd64ca2"
 WINDOW="5"
 SMOOTHING="0.75"
@@ -56,13 +57,13 @@ MIN=$4
 
 for i in $(seq $start $end)
 do
-        do_pmi /home/hellrich/tmp/emnlp2018/$corpus /home/hellrich/tmp/emnlp2018/pmi/${corpus}/ns_uw_v$i
-        do_pmi /home/hellrich/tmp/emnlp2018/$corpus /home/hellrich/tmp/emnlp2018/pmi/${corpus}/ns_dw_v$i "--dw"
-        do_pmi /home/hellrich/tmp/emnlp2018/$corpus /home/hellrich/tmp/emnlp2018/pmi/${corpus}/ns_ww_v$i "--ww"
-        do_pmi /home/hellrich/tmp/emnlp2018/$corpus /home/hellrich/tmp/emnlp2018/pmi/${corpus}/ws_uw_v$i " " "--dsub" "1e-4"
-        do_pmi /home/hellrich/tmp/emnlp2018/$corpus /home/hellrich/tmp/emnlp2018/pmi/${corpus}/ws_dw_v$i "--dw" "--dsub" "1e-4"
-        do_pmi /home/hellrich/tmp/emnlp2018/$corpus /home/hellrich/tmp/emnlp2018/pmi/${corpus}/ws_ww_v$i "--ww" "--dsub" "1e-4"
-        do_pmi /home/hellrich/tmp/emnlp2018/$corpus /home/hellrich/tmp/emnlp2018/pmi/${corpus}/ps_uw_v$i " " "--psub" "1e-4"
-        do_pmi /home/hellrich/tmp/emnlp2018/$corpus /home/hellrich/tmp/emnlp2018/pmi/${corpus}/ps_dw_v$i "--dw" "--psub" "1e-4"
-        do_pmi /home/hellrich/tmp/emnlp2018/$corpus /home/hellrich/tmp/emnlp2018/pmi/${corpus}/ps_ww_v$i "--ww" "--psub" "1e-4"
+        do_pmi $DIR/$corpus $DIR/pmi/${corpus}/ns_uw_v$i
+        do_pmi $DIR/$corpus $DIR/pmi/${corpus}/ns_dw_v$i "--dw"
+        do_pmi $DIR/$corpus $DIR/pmi/${corpus}/ns_ww_v$i "--ww"
+        do_pmi $DIR/$corpus $DIR/pmi/${corpus}/ws_uw_v$i " " "--dsub" "1e-4"
+        do_pmi $DIR/$corpus $DIR/pmi/${corpus}/ws_dw_v$i "--dw" "--dsub" "1e-4"
+        do_pmi $DIR/$corpus $DIR/pmi/${corpus}/ws_ww_v$i "--ww" "--dsub" "1e-4"
+        do_pmi $DIR/$corpus $DIR/pmi/${corpus}/ps_uw_v$i " " "--psub" "1e-4"
+        do_pmi $DIR/$corpus $DIR/pmi/${corpus}/ps_dw_v$i "--dw" "--psub" "1e-4"
+        do_pmi $DIR/$corpus $DIR/pmi/${corpus}/ps_ww_v$i "--ww" "--psub" "1e-4"
 done

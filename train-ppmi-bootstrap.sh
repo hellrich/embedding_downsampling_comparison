@@ -1,7 +1,9 @@
+DIR="/data/data_hellrich/tmp/emnlp2018/"
 HYPERWORD_PATH="/home/hellrich/hyperwords/omerlevy-hyperwords-688addd64ca2"
 WINDOW="5"
 SMOOTHING="0.75"
 DIM="500"
+
 
 function copy {
         #wieso nicht immer von base?
@@ -57,13 +59,13 @@ end=$3
 MIN=$4
 for i in $(seq $start $end)
 do
-        do_pmi /home/hellrich/tmp/emnlp2018/$corpus /home/hellrich/tmp/emnlp2018/pmi/${corpus}/ns_uw_b$i
-        do_pmi /home/hellrich/tmp/emnlp2018/$corpus /home/hellrich/tmp/emnlp2018/pmi/${corpus}/ns_dw_b$i "--dw"
-        do_pmi /home/hellrich/tmp/emnlp2018/$corpus /home/hellrich/tmp/emnlp2018/pmi/${corpus}/ns_ww_b$i "--ww"
-        do_pmi /home/hellrich/tmp/emnlp2018/$corpus /home/hellrich/tmp/emnlp2018/pmi/${corpus}/ws_uw_b$i " " "--dsub" "1e-4"
-        do_pmi /home/hellrich/tmp/emnlp2018/$corpus /home/hellrich/tmp/emnlp2018/pmi/${corpus}/ws_dw_b$i "--dw" "--dsub" "1e-4"
-        do_pmi /home/hellrich/tmp/emnlp2018/$corpus /home/hellrich/tmp/emnlp2018/pmi/${corpus}/ws_ww_b$i "--ww" "--dsub" "1e-4"
-        do_pmi /home/hellrich/tmp/emnlp2018/$corpus /home/hellrich/tmp/emnlp2018/pmi/${corpus}/ps_uw_b$i " " "--psub" "1e-4"
-        do_pmi /home/hellrich/tmp/emnlp2018/$corpus /home/hellrich/tmp/emnlp2018/pmi/${corpus}/ps_dw_b$i "--dw" "--psub" "1e-4"
-        do_pmi /home/hellrich/tmp/emnlp2018/$corpus /home/hellrich/tmp/emnlp2018/pmi/${corpus}/ps_ww_b$i "--ww" "--psub" "1e-4"
+        do_pmi $DIR/$corpus $DIR/pmi/${corpus}/ns_uw_b$i
+        do_pmi $DIR/$corpus $DIR/pmi/${corpus}/ns_dw_b$i "--dw"
+        do_pmi $DIR/$corpus $DIR/pmi/${corpus}/ns_ww_b$i "--ww"
+        do_pmi $DIR/$corpus $DIR/pmi/${corpus}/ws_uw_b$i " " "--dsub" "1e-4"
+        do_pmi $DIR/$corpus $DIR/pmi/${corpus}/ws_dw_b$i "--dw" "--dsub" "1e-4"
+        do_pmi $DIR/$corpus $DIR/pmi/${corpus}/ws_ww_b$i "--ww" "--dsub" "1e-4"
+        do_pmi $DIR/$corpus $DIR/pmi/${corpus}/ps_uw_b$i " " "--psub" "1e-4"
+        do_pmi $DIR/$corpus $DIR/pmi/${corpus}/ps_dw_b$i "--dw" "--psub" "1e-4"
+        do_pmi $DIR/$corpus $DIR/pmi/${corpus}/ps_ww_b$i "--ww" "--psub" "1e-4"
 done

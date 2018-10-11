@@ -1,3 +1,4 @@
+DIR="/data/data_hellrich/tmp/emnlp2018/"
 HYPERWORD_PATH="/home/hellrich/hyperwords/omerlevy-hyperwords-688addd64ca2"
 WINDOW="5"
 DIM="500"
@@ -62,6 +63,6 @@ MIN=$4
 
 for i in $(seq $start $end)
 do
-        do_glove /home/hellrich/tmp/emnlp2018/$corpus /home/hellrich/tmp/emnlp2018/glove/$corpus/v$i 
-        do_glove_boot /home/hellrich/tmp/emnlp2018/$corpus /home/hellrich/tmp/emnlp2018/glove/$corpus/b$i 
+        do_glove $DIR/$corpus $DIR/glove/$corpus/v$i 
+        do_glove_boot $DIR/$corpus $DIR/glove/$corpus/b$i 
 done
