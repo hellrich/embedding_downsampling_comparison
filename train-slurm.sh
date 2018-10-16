@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH -J embedding_downsampling
-#SBATCH --mem 25g
+#SBATCH --mem 20g
 #SBATCH --cpus-per-task 10
 
 
@@ -11,7 +11,7 @@ GLOVE_PATH="$TOOL_PATH/GloVe/build"
 
 WINDOW="5"
 DIM="500"
-MEMORY=20.0
+MEMORY=15.0
 NUM_THREADS=10
 SMOOTHING="0.75"
 
@@ -131,6 +131,7 @@ function do_glove_boot {
         local target_path=$2
 
         mkdir -p $target_path
+        cd $target_path
 
         $TOOL_PATH/bootstrap.sh $source_path $target_path/bootstrapped_corpus
 
@@ -155,6 +156,7 @@ function do_glove {
         local target_path=$2
 
         mkdir -p $target_path
+        cd $target_path
 
         $GLOVE_PATH/vocab_count -min-count $MIN < $source_path > $target_path/vocab
 
