@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH -J embedding_downsampling
-#SBATCH --mem 20g
+#SBATCH --mem 25g
 #SBATCH --cpus-per-task 10
 
 
@@ -11,7 +11,7 @@ GLOVE_PATH="$TOOL_PATH/GloVe/build"
 
 WINDOW="5"
 DIM="500"
-MEMORY=15.0
+MEMORY=20.0
 NUM_THREADS=10
 SMOOTHING="0.75"
 
