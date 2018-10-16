@@ -1,128 +1,216 @@
 #!/bin/bash
-#SBATCH -J sgns_impl_comparison
-#SBATCH --mem 10g
+#SBATCH -J embedding_downsampling
+#SBATCH --mem 20g
 #SBATCH --cpus-per-task 10
 
-#muss anhand der alten skripte komplette überarbeitet werden
-WORKING_DIR=/home/hellrich/tmp/sgns_implementation_comparison
-WORKING_TMP=/data/data_hellrich/tmp
 
-CORPUS_NAME=corpus #debug
-WIN=5
-MIN=100
-DOWNSAMPLE=1e-4
-DIM=500
-ITER=5
+DIR="/data/data_hellrich/tmp/emnlp2018/"
+HYPERWORD_PATH="/home/hellrich/hyperwords/omerlevy-hyperwords-688addd64ca2"
+TOOL_PATH="/home/hellrich/embedding_downsampling_comparison"
+GLOVE_PATH="$TOOL_PATH/GloVe/build"
 
+WINDOW="5"
+DIM="500"
+MEMORY=15.0
+NUM_THREADS=10
+SMOOTHING="0.75"
 
-function do_hyper {
-        source activate sgns_impl_hyper
-        local id=$1
-        local threads=$2
+########################################### SGNS
 
-        local IN=$WORKING_DIR/$CORPUS_NAME
-        local OUT=$WORKING_DIR/models/${threads}_threads/hyper_default/$id
+function do_sgns_boot {
+        local source_path=$1
+        local target_path=$2
+        local deterministic_subsample=$3
+        local weighted_window=$4
+        
+        mkdir -p $target_path
 
-        #iter set in child script
-        (
-                export WORKING_DIR=$WORKING_DIR
-                export ITER=$ITER
-                export RND=0
-                export TMP=$WORKING_TMP/${threads}_threads/hyper_default/$id
-                bash hyperwords_corpus2sgns.sh $IN $OUT --dyn --del --thr $MIN --win $WIN --sub $DOWNSAMPLE --cds 0.75 --dim $DIM --neg 5 --cpu $threads
-        )
-        echo "done hyper default $id"
+        $TOOL_PATH/bootstrap.sh $source_path $target_path/bootstrapped_corpus
+        $TOOL_PATH/word2vecw/word2vec -train $target_path/bootstrapped_corpus -output $target_path/sgns.words -size $DIM -window $WINDOW -sample 1e-4 -negative 5 -hs 0 -binary 0 -cbow 0 -min-count $MIN -ds $deterministic_subsample -ww $weighted_window
+        python $HYPERWORD_PATH/hyperwords/text2numpy.py $target_path/sgns.words
+        rm $target_path/bootstrapped_corpus
+        echo "finished $target_path sgns"
 }
 
-function do_hyper_random {
-        source activate sgns_impl_hyper
-        local id=$1
-        local threads=$2
+function do_sgns {
+        local source_path=$1
+        local target_path=$2
+        local deterministic_subsample=$3
+        local weighted_window=$4
+        
+        mkdir -p $target_path
+        #SGNS
+        $TOOL_PATH/word2vecw/word2vec -train $source_path -output $target_path/sgns.words -size $DIM -window $WINDOW -sample 1e-4 -negative 5 -hs 0 -binary 0 -cbow 0 -min-count $MIN -ds $deterministic_subsample -ww $weighted_window
+        python $HYPERWORD_PATH/hyperwords/text2numpy.py $target_path/sgns.words
 
-        local IN=$WORKING_DIR/$CORPUS_NAME
-        local OUT=$WORKING_DIR/models/${threads}_threads/hyper_random/$id
-
-        #iter set in child script
-        (
-                export WORKING_DIR=$WORKING_DIR
-                export ITER=$ITER
-                export RND=1
-                export TMP=$WORKING_TMP/${threads}_threads/hyper_random/$id
-                bash hyperwords_corpus2sgns.sh $IN $OUT --dyn --del --thr $MIN --win $WIN --sub $DOWNSAMPLE --cds 0.75 --dim $DIM --neg 5 --cpu $threads
-        )
-        echo "done hyper random $id"
+        echo "finished $target_path sgns"
 }
 
-function do_word2vec {
-        cd $WORKING_DIR
-        local id=$1    
-        local threads=$2
 
-        local IN=$WORKING_DIR/$CORPUS_NAME
-        local OUT=$WORKING_DIR/models/${threads}_threads/word2vec/$id
-        mkdir -p $OUT
-        word2vec/word2vec -train $IN -output $OUT/vec -size $DIM -window $WIN -sample $DOWNSAMPLE -negative 5 -cbow 0 -min-count $MIN -threads $threads -iter $ITER
-        echo "done word2vec $id"
+########################################### SVD
+function copy {
+        #wieso nicht immer von base?
+        local target_path=$1
+        local from_name=$2
+        local to_name=$3
+
+        cp $target_path/${from_name}.words.vocab $target_path/${to_name}.words.vocab
+        cp $target_path/${from_name}.contexts.vocab $target_path/${to_name}.contexts.vocab
 }
 
-function do_gensim_default {
-        source activate sgns_impl_gensim
-        local id=$1
-        local threads=$2
+function do_pmi {
+        local source_path=$1
+        local target_path=$2 
+        local window_type=$3
+        local sub1=$4
+        local sub2=$5
 
-        local IN=$WORKING_DIR/$CORPUS_NAME
-        local OUT=$WORKING_DIR/models/${threads}_threads/gensim_default/$id
-        mkdir -p $OUT
-        python train_gensim.py $IN $OUT --dim $DIM --threads $threads --window $WIN --min $MIN --sample $DOWNSAMPLE --iter $ITER
-        echo "done gensim $id"    
+        prepare $source_path $target_path $window_type $sub1 $sub2
+        #PMI
+        python $HYPERWORD_PATH/hyperwords/counts2pmi.py --cds $SMOOTHING $target_path/counts $target_path/pmi
+        #PMI SVD
+        python $HYPERWORD_PATH/hyperwords/pmi2svd.py --dim $DIM $target_path/pmi $target_path/svd_pmi
+        copy $target_path pmi svd_pmi
+        
+        rm $target_path/counts $target_path/pmi.npz
+        echo "finished $target_path pmi"
 }
 
-function do_gensim_random {
-        source activate sgns_impl_gensim
-        local id=$1
-        local threads=$2
+function do_pmi_boot {
+        local source_path=$1
+        local target_path=$2 
+        local window_type=$3
+        local sub1=$4
+        local sub2=$5
 
-        local IN=$WORKING_DIR/$CORPUS_NAME
-        local OUT=$WORKING_DIR/models/${threads}_threads/gensim_random/$id
-        mkdir -p $OUT
-        python train_gensim.py $IN $OUT --dim $DIM --threads $threads --window $WIN --min $MIN --sample $DOWNSAMPLE --iter $ITER --random
-        echo "done gensim random $id"    
+        prepare_boot $source_path $target_path $window_type $sub1 $sub2
+        #PMI
+        python $HYPERWORD_PATH/hyperwords/counts2pmi.py --cds $SMOOTHING $target_path/counts $target_path/pmi
+        #PMI SVD
+        python $HYPERWORD_PATH/hyperwords/pmi2svd.py --dim $DIM $target_path/pmi $target_path/svd_pmi
+        copy $target_path pmi svd_pmi
+        
+        rm $target_path/counts $target_path/pmi.npz
+        echo "finished $target_path pmi"
 }
 
-function do_gensim_deterministic {
-        source activate sgns_impl_gensim
-        local id=$1
-        local threads=$2
+function prepare {
+        local source_path=$1
+        local target_path=$2
+        local window_type=$3
+        local sub1=$4
+        local sub2=$5
 
-        local IN=$WORKING_DIR/$CORPUS_NAME
-        local OUT=$WORKING_DIR/models/${threads}_threads/gensim_deterministic/$id
-        mkdir -p $OUT
-        (
-                export PYTHONHASHSEED=0
-                python train_gensim.py $IN $OUT --dim $DIM --threads $threads --window $WIN --min $MIN --sample $DOWNSAMPLE --iter $ITER
-        )
-        echo "done gensim deterministic $id"    
+        mkdir -p $target_path
+
+        python $HYPERWORD_PATH/hyperwords/corpus2counts.py $source_path --win $WINDOW --thr $MIN $window_type $sub1 $sub2 > $target_path/counts
+        python $HYPERWORD_PATH/hyperwords/counts2vocab.py $target_path/counts
 }
 
-#prevents conda bugs
-source ~/.bashrc
+function prepare_boot {
+        local source_path=$1
+        local target_path=$2
+        local window_type=$3
+        local sub1=$4
+        local sub2=$5
 
-id=$2
-threads=$3
+        mkdir -p $target_path
 
-case $1 in 
-        hyper1) do_hyper $id $threads
+        $TOOL_PATH/bootstrap.sh $source_path $target_path/bootstrapped_corpus
+
+        python $HYPERWORD_PATH/hyperwords/corpus2counts.py $target_path/bootstrapped_corpus --win $WINDOW --thr $MIN $window_type $sub1 $sub2 > $target_path/counts
+        python $HYPERWORD_PATH/hyperwords/counts2vocab.py $target_path/counts
+        rm $target_path/bootstrapped_corpus
+}
+
+########################################### GloVe
+
+
+function do_glove_boot {
+        local source_path=$1
+        local target_path=$2
+
+        mkdir -p $target_path
+
+        $TOOL_PATH/bootstrap.sh $source_path $target_path/bootstrapped_corpus
+
+        $GLOVE_PATH/vocab_count -min-count $MIN < $target_path/bootstrapped_corpus > $target_path/vocab
+
+        $GLOVE_PATH/cooccur -memory $MEMORY -vocab-file $target_path/vocab -window-size $WINDOW < $target_path/bootstrapped_corpus > $target_path/cooc
+
+        $GLOVE_PATH/shuffle -memory $MEMORY < $target_path/cooc > $target_path/cooc_shuf
+
+        $GLOVE_PATH/glove -save-file $target_path/vectors -threads $NUM_THREADS -input-file $target_path/cooc_shuf -vector-size $DIM -binary 2 -vocab-file $target_path/vocab 
+
+        python $HYPERWORD_PATH/hyperwords/text2numpy.py $target_path/vectors.txt
+
+        rm $target_path/bootstrapped_corpus
+        rm $target_path/cooc
+        rm $target_path/cooc_shuf
+        echo "finished $target_path glove boot"
+}
+
+function do_glove {
+        local source_path=$1
+        local target_path=$2
+
+        mkdir -p $target_path
+
+        $GLOVE_PATH/vocab_count -min-count $MIN < $source_path > $target_path/vocab
+
+        $GLOVE_PATH/cooccur -memory $MEMORY -vocab-file $target_path/vocab -window-size $WINDOW < $source_path > $target_path/cooc
+
+        $GLOVE_PATH/shuffle -memory $MEMORY < $target_path/cooc > $target_path/cooc_shuf
+
+        $GLOVE_PATH/glove -save-file $target_path/vectors -threads $NUM_THREADS -input-file $target_path/cooc_shuf -vector-size $DIM -binary 2 -vocab-file $target_path/vocab 
+
+        python $HYPERWORD_PATH/hyperwords/text2numpy.py $target_path/vectors.txt
+
+        rm $target_path/cooc
+        rm $target_path/cooc_shuf
+        echo "finished $target_path glove"
+}
+
+
+source ~/.bashrc && source activate jeseme
+what=$1
+i=$2
+corpus=$3
+MIN=$4
+
+case $what in 
+        glove)  do_glove $DIR/$corpus $DIR/glove/$corpus/v$i
                 ;;
-        hyper2) do_hyper_random $id $threads
+        gloveb) do_glove_boot $DIR/$corpus $DIR/glove/$corpus/b$i 
                 ;;
-        word2vec) do_word2vec $id $threads
+        ppmi)   do_pmi $DIR/$corpus $DIR/pmi/${corpus}/ns_uw_v$i
+                do_pmi $DIR/$corpus $DIR/pmi/${corpus}/ns_dw_v$i "--dw"
+                do_pmi $DIR/$corpus $DIR/pmi/${corpus}/ns_ww_v$i "--ww"
+                do_pmi $DIR/$corpus $DIR/pmi/${corpus}/ws_uw_v$i " " "--dsub" "1e-4"
+                do_pmi $DIR/$corpus $DIR/pmi/${corpus}/ws_dw_v$i "--dw" "--dsub" "1e-4"
+                do_pmi $DIR/$corpus $DIR/pmi/${corpus}/ws_ww_v$i "--ww" "--dsub" "1e-4"
+                do_pmi $DIR/$corpus $DIR/pmi/${corpus}/ps_uw_v$i " " "--psub" "1e-4"
+                do_pmi $DIR/$corpus $DIR/pmi/${corpus}/ps_dw_v$i "--dw" "--psub" "1e-4"
+                do_pmi $DIR/$corpus $DIR/pmi/${corpus}/ps_ww_v$i "--ww" "--psub" "1e-4"
                 ;;
-        gensim1) do_gensim_default $id $threads
+        ppmib)  do_pmi_boot $DIR/$corpus $DIR/pmi/${corpus}/ns_uw_b$i
+                do_pmi_boot $DIR/$corpus $DIR/pmi/${corpus}/ns_dw_b$i "--dw"
+                do_pmi_boot $DIR/$corpus $DIR/pmi/${corpus}/ns_ww_b$i "--ww"
+                do_pmi_boot $DIR/$corpus $DIR/pmi/${corpus}/ws_uw_b$i " " "--dsub" "1e-4"
+                do_pmi_boot $DIR/$corpus $DIR/pmi/${corpus}/ws_dw_b$i "--dw" "--dsub" "1e-4"
+                do_pmi_boot $DIR/$corpus $DIR/pmi/${corpus}/ws_ww_b$i "--ww" "--dsub" "1e-4"
+                do_pmi_boot $DIR/$corpus $DIR/pmi/${corpus}/ps_uw_b$i " " "--psub" "1e-4"
+                do_pmi_boot $DIR/$corpus $DIR/pmi/${corpus}/ps_dw_b$i "--dw" "--psub" "1e-4"
+                do_pmi_boot $DIR/$corpus $DIR/pmi/${corpus}/ps_ww_b$i "--ww" "--psub" "1e-4"
                 ;;
-        gensim2) do_gensim_deterministic $id $threads
+        w2v)    do_sgns $DIR/$corpus $DIR/sgns/$corpus/ps_dw_v$i 0 0 
+                do_sgns $DIR/$corpus $DIR/sgns/$corpus/ns_dw_v$i 2 0
+                #classic sgns options, not using the modifictions allowed by word2vecw
                 ;;
-        gensim3) do_gensim_random $id $threads
+        w2vb)   do_sgns_boot $DIR/$corpus $DIR/sgns/$corpus/ps_dw_b$i 0 0 
+                do_sgns_boot $DIR/$corpus $DIR/sgns/$corpus/ns_dw_b$i 2 0
+                #classic sgns options, not using the modifictions allowed by word2vecw
                 ;;
-        *)      echo "Provide parameter what to do: hyper1 / hyper2 / word2vec / gensim1 / gensim2 / gensim3"
+        *)      echo "Provide parameter what to do: glove gloveb ppmi ppmib w2v w2vb"
                 ;;
 esac
