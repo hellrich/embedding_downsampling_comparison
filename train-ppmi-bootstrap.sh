@@ -44,7 +44,7 @@ function prepare {
 
         /home/hellrich/emnlp2018/bootstrap.sh $source_path $target_path/bootstrapped_corpus
 
-        python $HYPERWORD_PATH/hyperwords/corpus2counts.py $target_path/bootstrapped_corpus --win $WINDOW --thr $MIN $window_type $sub1 $sub2 > $target_path/counts
+        python $HYPERWORD_PATH/hyperwords/corpus2counts.py $target_path/bootstrapped_corpus --win $WINDOW --thr $MIN $window_type $sub1 $sub2 --out $target_path/counts
         python $HYPERWORD_PATH/hyperwords/counts2vocab.py $target_path/counts
         rm $target_path/bootstrapped_corpus
 }
