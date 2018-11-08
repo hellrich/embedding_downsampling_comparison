@@ -1,6 +1,4 @@
 #!/bin/bash
-#SBATCH -J embedding_downsampling
-#SBATCH --mem 20g
 #SBATCH --cpus-per-task 10
 
 
@@ -11,7 +9,7 @@ GLOVE_PATH="$TOOL_PATH/GloVe/build"
 
 WINDOW="5"
 DIM="500"
-MEMORY=15.0
+MEMORY=25.0
 NUM_THREADS=10
 SMOOTHING="0.75"
 
@@ -66,12 +64,14 @@ function do_pmi {
         local sub2=$5
 
         prepare $source_path $target_path $window_type $sub1 $sub2
+        echo "finished prepare"
         #PMI
         python $HYPERWORD_PATH/hyperwords/counts2pmi.py --cds $SMOOTHING $target_path/counts $target_path/pmi
+        echo "finished ppmi"
         #PMI SVD
         python $HYPERWORD_PATH/hyperwords/pmi2svd.py --dim $DIM $target_path/pmi $target_path/svd_pmi
-        copy $target_path pmi svd_pmi
         
+        copy $target_path pmi svd_pmi
         rm $target_path/counts $target_path/pmi.npz
         echo "finished $target_path pmi"
 }
@@ -84,12 +84,14 @@ function do_pmi_boot {
         local sub2=$5
 
         prepare_boot $source_path $target_path $window_type $sub1 $sub2
+        echo "finished prepare"
         #PMI
         python $HYPERWORD_PATH/hyperwords/counts2pmi.py --cds $SMOOTHING $target_path/counts $target_path/pmi
+        echo "finished ppmi"
         #PMI SVD
         python $HYPERWORD_PATH/hyperwords/pmi2svd.py --dim $DIM $target_path/pmi $target_path/svd_pmi
-        copy $target_path pmi svd_pmi
         
+        copy $target_path pmi svd_pmi
         rm $target_path/counts $target_path/pmi.npz
         echo "finished $target_path pmi"
 }
@@ -103,7 +105,7 @@ function prepare {
 
         mkdir -p $target_path
 
-        python $HYPERWORD_PATH/hyperwords/corpus2counts.py $source_path --win $WINDOW --thr $MIN $window_type $sub1 $sub2 > $target_path/counts
+        python $HYPERWORD_PATH/hyperwords/corpus2counts.py $source_path --win $WINDOW --thr $MIN $window_type $sub1 $sub2 --out $target_path/counts
         python $HYPERWORD_PATH/hyperwords/counts2vocab.py $target_path/counts
 }
 
@@ -118,7 +120,7 @@ function prepare_boot {
 
         $TOOL_PATH/bootstrap.sh $source_path $target_path/bootstrapped_corpus
 
-        python $HYPERWORD_PATH/hyperwords/corpus2counts.py $target_path/bootstrapped_corpus --win $WINDOW --thr $MIN $window_type $sub1 $sub2 > $target_path/counts
+        python $HYPERWORD_PATH/hyperwords/corpus2counts.py $target_path/bootstrapped_corpus --win $WINDOW --thr $MIN $window_type $sub1 $sub2 --out $target_path/counts
         python $HYPERWORD_PATH/hyperwords/counts2vocab.py $target_path/counts
         rm $target_path/bootstrapped_corpus
 }
@@ -141,7 +143,7 @@ function do_glove_boot {
 
         $GLOVE_PATH/shuffle -memory $MEMORY < $target_path/cooc > $target_path/cooc_shuf
 
-        $GLOVE_PATH/glove -save-file $target_path/vectors -threads $NUM_THREADS -input-file $target_path/cooc_shuf -vector-size $DIM -binary 2 -vocab-file $target_path/vocab 
+        $GLOVE_PATH/glove -verbose 1 -save-file $target_path/vectors -threads $NUM_THREADS -input-file $target_path/cooc_shuf -vector-size $DIM -binary 2 -vocab-file $target_path/vocab 
 
         python $HYPERWORD_PATH/hyperwords/text2numpy.py $target_path/vectors.txt
 
@@ -164,7 +166,7 @@ function do_glove {
 
         $GLOVE_PATH/shuffle -memory $MEMORY < $target_path/cooc > $target_path/cooc_shuf
 
-        $GLOVE_PATH/glove -save-file $target_path/vectors -threads $NUM_THREADS -input-file $target_path/cooc_shuf -vector-size $DIM -binary 2 -vocab-file $target_path/vocab 
+        $GLOVE_PATH/glove -verbose 1 -save-file $target_path/vectors -threads $NUM_THREADS -input-file $target_path/cooc_shuf -vector-size $DIM -binary 2 -vocab-file $target_path/vocab 
 
         python $HYPERWORD_PATH/hyperwords/text2numpy.py $target_path/vectors.txt
 
@@ -179,32 +181,49 @@ what=$1
 i=$2
 corpus=$3
 MIN=$4
+sampling=$5
 
 case $what in 
         glove)  do_glove $DIR/$corpus $DIR/glove/$corpus/v$i
                 ;;
         gloveb) do_glove_boot $DIR/$corpus $DIR/glove/$corpus/b$i 
                 ;;
-        ppmi)   do_pmi $DIR/$corpus $DIR/pmi/${corpus}/ns_uw_v$i
-                do_pmi $DIR/$corpus $DIR/pmi/${corpus}/ns_dw_v$i "--dw"
-                do_pmi $DIR/$corpus $DIR/pmi/${corpus}/ns_ww_v$i "--ww"
-                do_pmi $DIR/$corpus $DIR/pmi/${corpus}/ws_uw_v$i " " "--dsub" "1e-4"
-                do_pmi $DIR/$corpus $DIR/pmi/${corpus}/ws_dw_v$i "--dw" "--dsub" "1e-4"
-                do_pmi $DIR/$corpus $DIR/pmi/${corpus}/ws_ww_v$i "--ww" "--dsub" "1e-4"
-                do_pmi $DIR/$corpus $DIR/pmi/${corpus}/ps_uw_v$i " " "--psub" "1e-4"
-                do_pmi $DIR/$corpus $DIR/pmi/${corpus}/ps_dw_v$i "--dw" "--psub" "1e-4"
-                do_pmi $DIR/$corpus $DIR/pmi/${corpus}/ps_ww_v$i "--ww" "--psub" "1e-4"
+        ppmi)   case $sampling in
+                none) do_pmi $DIR/$corpus $DIR/pmi/${corpus}/ns_uw_v$i
                 ;;
-        ppmib)  do_pmi_boot $DIR/$corpus $DIR/pmi/${corpus}/ns_uw_b$i
-                do_pmi_boot $DIR/$corpus $DIR/pmi/${corpus}/ns_dw_b$i "--dw"
-                do_pmi_boot $DIR/$corpus $DIR/pmi/${corpus}/ns_ww_b$i "--ww"
-                do_pmi_boot $DIR/$corpus $DIR/pmi/${corpus}/ws_uw_b$i " " "--dsub" "1e-4"
-                do_pmi_boot $DIR/$corpus $DIR/pmi/${corpus}/ws_dw_b$i "--dw" "--dsub" "1e-4"
-                do_pmi_boot $DIR/$corpus $DIR/pmi/${corpus}/ws_ww_b$i "--ww" "--dsub" "1e-4"
-                do_pmi_boot $DIR/$corpus $DIR/pmi/${corpus}/ps_uw_b$i " " "--psub" "1e-4"
-                do_pmi_boot $DIR/$corpus $DIR/pmi/${corpus}/ps_dw_b$i "--dw" "--psub" "1e-4"
-                do_pmi_boot $DIR/$corpus $DIR/pmi/${corpus}/ps_ww_b$i "--ww" "--psub" "1e-4"
+                weight) do_pmi $DIR/$corpus $DIR/pmi/${corpus}/ws_ww_v$i "--ww" "--dsub" "1e-4"
                 ;;
+                prob) do_pmi $DIR/$corpus $DIR/pmi/${corpus}/ps_dw_v$i "--dw" "--psub" "1e-4"
+                ;;
+                *) echo "Provide parameter what to do: none weight prob"
+                ;;
+            esac
+            ;;
+            #not executed for wiki due to size
+            #do_pmi $DIR/$corpus $DIR/pmi/${corpus}/ns_dw_v$i "--dw"
+            #do_pmi $DIR/$corpus $DIR/pmi/${corpus}/ns_ww_v$i "--ww"
+            #do_pmi $DIR/$corpus $DIR/pmi/${corpus}/ws_uw_v$i " " "--dsub" "1e-4"
+            #do_pmi $DIR/$corpus $DIR/pmi/${corpus}/ws_dw_v$i "--dw" "--dsub" "1e-4"  
+            #do_pmi $DIR/$corpus $DIR/pmi/${corpus}/ps_uw_v$i " " "--psub" "1e-4"
+            #do_pmi $DIR/$corpus $DIR/pmi/${corpus}/ps_ww_v$i "--ww" "--psub" "1e-4"
+        ppmib)  case $sampling in
+                none) do_pmi_boot $DIR/$corpus $DIR/pmi/${corpus}/ns_uw_b$i
+                ;;
+                weight) do_pmi_boot $DIR/$corpus $DIR/pmi/${corpus}/ws_ww_b$i "--ww" "--dsub" "1e-4"
+                ;;
+                prob) do_pmi_boot $DIR/$corpus $DIR/pmi/${corpus}/ps_dw_b$i "--dw" "--psub" "1e-4"
+                ;;
+                *) echo "Provide parameter what to do: none weight prob"
+                ;;
+            esac
+            ;;
+            #not executed for wiki due to size
+            #do_pmi_boot $DIR/$corpus $DIR/pmi/${corpus}/ns_dw_b$i "--dw"
+            #do_pmi_boot $DIR/$corpus $DIR/pmi/${corpus}/ns_ww_b$i "--ww"
+            #do_pmi_boot $DIR/$corpus $DIR/pmi/${corpus}/ws_uw_b$i " " "--dsub" "1e-4"
+            #do_pmi_boot $DIR/$corpus $DIR/pmi/${corpus}/ws_dw_b$i "--dw" "--dsub" "1e-4"
+            #do_pmi_boot $DIR/$corpus $DIR/pmi/${corpus}/ps_uw_b$i " " "--psub" "1e-4"
+            #do_pmi_boot $DIR/$corpus $DIR/pmi/${corpus}/ps_ww_b$i "--ww" "--psub" "1e-4"
         w2v)    do_sgns $DIR/$corpus $DIR/sgns/$corpus/ps_dw_v$i 0 0 
                 do_sgns $DIR/$corpus $DIR/sgns/$corpus/ns_dw_v$i 2 0
                 #classic sgns options, not using the modifictions allowed by word2vecw
