@@ -42,7 +42,7 @@ function prepare {
 
         mkdir -p $target_path
 
-        python $HYPERWORD_PATH/hyperwords/corpus2counts.py $source_path --win $WINDOW --thr $MIN $window_type $sub1 $sub2 > $target_path/counts
+        python $HYPERWORD_PATH/hyperwords/corpus2counts.py $source_path --win $WINDOW --thr $MIN $window_type $sub1 $sub2 --out $target_path/counts
         python $HYPERWORD_PATH/hyperwords/counts2vocab.py $target_path/counts
 }
 

@@ -3,4 +3,6 @@ Experiments on different word embedding algorithms and how down-sampling of freq
  
 Probabilistic down-sampling seems to be worse than weighting in most scenarios.
 
-Inlcudes a modified word2vec(w) which uses weighting, not beneficial here. Assumes conda for dependency managament and [my modified version of hyperwords](https://github.com/hellrich/hyperwords)
+Inlcudes a modified word2vec(w) which uses weighting, not beneficial here. Assumes conda for dependency managament and [my modified version of hyperwords](https://github.com/hellrich/hyperwords/tree/downsampling).
+
+Note that slurm was used for the long running Wikipedia experiments, yet not for others
