@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 DIR="/data/data_hellrich/tmp/emnlp2018/"
 FREQUENT="$DIR/wiki_1000_most_frequent"
 CORPUS="wiki"
