@@ -2,41 +2,44 @@
 DIR="/data/data_hellrich/tmp/emnlp2018/"
 FREQUENT="$DIR/wiki_1000_most_frequent"
 CORPUS="wiki"
-RESULTS="/home/hellrich/embedding_downsampling_comparison/results/results-${CORPUS}"
 
-for x in $DIR/pmi/$CORPUS
-do
-	for y in $x/*v0 #assumes everything ready
+function eval_pmi {
+	for x in $DIR/pmi/$CORPUS
 	do
-		base=${y::-2}
-		normal=$(./evaluate-variant.sh $FREQUENT SVD svd_pmi "$base"v*)
-		bootstrapped=$(./evaluate-variant.sh $FREQUENT SVD svd_pmi "$base"b*)
+		for y in $x/*v0 #assumes everything ready
+		do
+			base=${y::-2}
+			normal=$(./evaluate-variant.sh $FREQUENT SVD svd_pmi "$base"v*)
+			bootstrapped=$(./evaluate-variant.sh $FREQUENT SVD svd_pmi "$base"b*)
 
-		labels=${base/*\//}; 
-		label1=${labels::-4}
-		label2=${labels:3:-1}
+			labels=${base/*\//}; 
+			label1=${labels::-4}
+			label2=${labels:3:-1}
 
-		echo "SVD	$CORPUS	$label1	$label2	n	$normal" > $RESULTS
-		echo "SVD	$CORPUS	$label1	$label2	b	$bootstrapped" >> $RESULTS
+			echo "SVD	$CORPUS	$label1	$label2	n	$normal"
+			echo "SVD	$CORPUS	$label1	$label2	b	$bootstrapped"
+		done
 	done
-done
+}
 
-for x in $DIR/sgns/$CORPUS
-do
-	for y in $x/*v0 #assumes everything ready
+function eval_sgns {
+	for x in $DIR/sgns/$CORPUS
 	do
-		base=${y::-2}
-		normal=$(./evaluate-variant.sh $FREQUENT SGNS sgns "$base"v*)
-		bootstrapped=$(./evaluate-variant.sh $FREQUENT SGNS sgns "$base"b*)
+		for y in $x/*v0 #assumes everything ready
+		do
+			base=${y::-2}
+			normal=$(./evaluate-variant.sh $FREQUENT SGNS sgns "$base"v*)
+			bootstrapped=$(./evaluate-variant.sh $FREQUENT SGNS sgns "$base"b*)
 
-		labels=${base/*\//}; 
-		label1=${labels::-4}
-		label2=${labels:3:-1}
+			labels=${base/*\//}; 
+			label1=${labels::-4}
+			label2=${labels:3:-1}
 
-		echo "SGNS	$CORPUS	$label1	$label2	n	$normal" >> $RESULTS
-		echo "SGNS	$CORPUS	$label1	$label2	b	$bootstrapped" >> $RESULTS
+			echo "SGNS	$CORPUS	$label1	$label2	n	$normal"
+			echo "SGNS	$CORPUS	$label1	$label2	b	$bootstrapped"
+		done
 	done
-done
+}
 
 function correct_names {
 	for y in $@
@@ -46,21 +49,38 @@ function correct_names {
 	done
 }
 
-for x in $DIR/glove/$CORPUS
-do
-	for y in $x/*v0 #assumes everything ready
+function eval_glove {
+	for x in $DIR/glove/$CORPUS
 	do
-		base=${y::-2}
-		correct_names "$base"v*
-		correct_names "$base"b*
+		for y in $x/*v0 #assumes everything ready
+		do
+			base=${y::-2}
+			correct_names "$base"v*
+			correct_names "$base"b*
 
-		normal=$(./evaluate-variant.sh $FREQUENT SGNS vectors "$base"v*)
-		bootstrapped=$(./evaluate-variant.sh $FREQUENT SGNS vectors "$base"b*)
+			normal=$(./evaluate-variant.sh $FREQUENT SGNS vectors "$base"v*)
+			bootstrapped=$(./evaluate-variant.sh $FREQUENT SGNS vectors "$base"b*)
 
-		label1=ws
-		label2=ww
+			label1=ws
+			label2=ww
 
-		echo "GloVe	$CORPUS	$label1	$label2	n	$normal" >> $RESULTS
-		echo "GloVe	$CORPUS	$label1	$label2	b	$bootstrapped" >> $RESULTS
+			echo "GloVe	$CORPUS	$label1	$label2	n	$normal"
+			echo "GloVe	$CORPUS	$label1	$label2	b	$bootstrapped"
+		done
 	done
-done
+}
+
+case $1 in
+	pmi)
+		eval_pmi
+		;;
+	glove)
+		eval_glove
+		;;
+	sgns)
+		eval_sgns
+		;;
+	*)
+		echo "ERROR, choose pmi, glove or sgns"
+	exit 1
+esac 
