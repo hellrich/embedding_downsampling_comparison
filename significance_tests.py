@@ -38,8 +38,7 @@ auf dem DataFrame durch."""
     pval = 1 - f.cdf(stat, b-1, (b-1)*(k-1))
     return (stat, pval)
 
-os.chdir("/home/kampe/Documents/Stats/181117")
-data = open("naacldata")
+data = open("significance_test_data")
 header = data.readline().split()
 comparison = data.readlines()
 data.close()
