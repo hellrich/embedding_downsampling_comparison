@@ -1,5 +1,6 @@
 CORPUS="news"
-FREQUENT="/home/hellrich/tmp/emnlp2018/${CORPUS}_1000_most_frequent"
+DIR="/data/data_hellrich/tmp/emnlp2018"
+FREQUENT="$DIR/${CORPUS}_1000_most_frequent"
 
 function correct_names {
 	for y in $@
@@ -10,7 +11,7 @@ function correct_names {
 }
 
 (
-for x in /home/hellrich/tmp/emnlp2018/pmi/$CORPUS
+for x in $DIR/pmi/$CORPUS
 do
 	for y in $x/*v0 #assumes everything ready
 	do
@@ -29,7 +30,7 @@ done
 ) > ${1}_svd &
 
  (
- for x in /home/hellrich/tmp/emnlp2018/sgns/$CORPUS
+ for x in $DIR/sgns/$CORPUS
  do
  	for y in $x/*v0 #assumes everything ready
  	do
@@ -48,7 +49,7 @@ done
  ) > ${1}_sgns &
 
  (
- for x in /home/hellrich/tmp/emnlp2018/glove/$CORPUS
+ for x in $DIR/glove/$CORPUS
  do
  	for y in $x/*v0 #assumes everything ready
  	do

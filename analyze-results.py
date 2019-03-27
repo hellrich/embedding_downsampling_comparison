@@ -7,7 +7,7 @@ from scipy import stats
 data = []
 
 
-def load_results(file_name):
+def load_results(file_name, consolidate=False):
     with open(file_name) as f:
         data = []
         for line in f:
@@ -34,7 +34,8 @@ def load_results(file_name):
                                              "ws3"], d["ana0"], d["ana1"], d["reliability"]]]) for i in range(len(d["ws0"]))]
             d["whmean_separate"] = [12.0 / sum([1 / c[i] for c in [d["ws0"], d["ws1"], d["ws2"], d["ws3"], d["ana0"], d["ana1"], d[
                                                "reliability"], d["ana0"], d["ana1"], d["reliability"], d["reliability"], d["reliability"]]]) for i in range(len(d["ws0"]))]
-            data.append(d)
+            if not consolidate or (algorithm=="SGNS" and frequent=="ps" and window=="dw") or (not algorithm=="SGNS" and ((frequent=="ps" and window=="dw") or (frequent=="ns" and window=="uw") or (frequent=="ws" and window=="ww"))):
+                data.append(d)
     return data
 
 
@@ -65,7 +66,7 @@ def mark_significant(data, column, emph1="", emph2="*", column_condition=lambda 
 
 
 # terrible code, modifies data
-def pretty_print(data, columns, sep="\t", header=True, column_condition=lambda x: True, ommit_corpus=False, latex=False):
+def pretty_print(data, columns, sep="\t", header=True, column_condition=lambda x: True, ommit_corpus=False, latex=False, consolidate=False):
     final= "\\\\" if latex else "" 
     info = "corpus bootstrapped algorithm frequent window".split() + columns
     if latex:
@@ -95,9 +96,11 @@ def pretty_print(data, columns, sep="\t", header=True, column_condition=lambda x
                 else:
                     last_algo = d["algorithm"]
                     if d["algorithm"] == "SVD":
-                        to_print[1] = "\\multirow{9}{*}{\\svdpmi}"
+                        n = "3" if consolidate else "9"
+                        to_print[1] = "\\multirow{"+n+"}{*}{\\svdpmi}"
                     elif d["algorithm"] == "SGNS":
-                        to_print[1] = "\\multirow{9}{*}{\\sgns}"
+                        n = "1" if consolidate else "9"
+                        to_print[1] = "\\multirow{"+n+"}{*}{\\sgns}"
                     elif d["algorithm"] == "GloVe":
                         to_print[1] = "\\glove"
                 if last_frequent == d["frequent"]: # and not last_algo == d["algorithm"]:
@@ -106,6 +109,9 @@ def pretty_print(data, columns, sep="\t", header=True, column_condition=lambda x
                     last_frequent = d["frequent"]
                     if d["algorithm"] == "SVD" or d["algorithm"] == "SGNS":
                         to_print[2] = "\\multirow{3}{*}{"+d["frequent"]+"}"
+            if consolidate:
+                to_print[2:] = to_print[3:]
+                to_print[1] = "& "+to_print[1]
             if ommit_corpus:
                 to_print = to_print[1:]
             print(sep.join(to_print) + final)
@@ -139,9 +145,9 @@ def nicer_abbreviations(data):
             d["bootstrapped"] = "no"
 
 
-def main(file_name, latex=False, split=False, stddev=False):
+def main(file_name, latex=False, split=False, stddev=False, consolidate=False):
     global data
-    data = load_results(file_name)
+    data = load_results(file_name, consolidate)
     #remove_most_sgns(data)
     # columns = "ws0 ws1 ws2 ws3 ana0 ana1 reliability hmean_of_means
     # hmean_separate whmean_separate".split()
@@ -154,13 +160,13 @@ def main(file_name, latex=False, split=False, stddev=False):
                              "bootstrapped"] == "b" or x["bootstrapped"] == "yes", stddev=stddev)
         ommit_corpus = split
         pretty_print(data, columns, sep=" & ", header=True, column_condition=lambda x:  x[
-                     "bootstrapped"] == "n" or x["bootstrapped"] == "no", ommit_corpus=ommit_corpus, latex=True)
+                     "bootstrapped"] == "n" or x["bootstrapped"] == "no", ommit_corpus=ommit_corpus, latex=True, consolidate=consolidate)
         if split:
             print("\n\nBootstrapped\n")
         else:
             print("\\hline")
         pretty_print(data, columns, sep=" & ", header=False, column_condition=lambda x: x[
-                     "bootstrapped"] == "b" or x["bootstrapped"] == "yes", ommit_corpus=ommit_corpus, latex=True)
+                     "bootstrapped"] == "b" or x["bootstrapped"] == "yes", ommit_corpus=ommit_corpus, latex=True, consolidate=consolidate)
     else:
         for column in columns:
             mark_significant(data, column, emph1="", emph2="*",
@@ -181,5 +187,6 @@ if __name__ == "__main__":
             --latex    Latex pretty print results
             --split    Split between (non-)bootstraped
             --stddev   Show standard deviations
+            --consolidate
     """)
-    main(args["<file_name>"], args["--latex"], args["--split"], args["--stddev"])
+    main(args["<file_name>"], args["--latex"], args["--split"], args["--stddev"], args["--consolidate"])

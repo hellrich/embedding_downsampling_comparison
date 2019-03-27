@@ -1,7 +1,8 @@
-FREQUENT=/home/hellrich/tmp/emnlp2018/coha_1000_most_frequent
+DIR="/data/data_hellrich/tmp/emnlp2018"
+FREQUENT=$DIR/coha_1000_most_frequent
 CORPUS="coha"
 
-for x in /home/hellrich/tmp/emnlp2018/pmi/$CORPUS
+for x in $DIR/pmi/$CORPUS
 do
 	for y in $x/*v0 #assumes everything ready
 	do
@@ -18,7 +19,7 @@ do
 	done
 done
 
-for x in /home/hellrich/tmp/emnlp2018/sgns/$CORPUS
+for x in $DIR/sgns/$CORPUS
 do
 	for y in $x/*v0 #assumes everything ready
 	do
@@ -43,7 +44,7 @@ function correct_names {
 	done
 }
 
-for x in /home/hellrich/tmp/emnlp2018/glove/$CORPUS
+for x in $DIR/glove/$CORPUS
 do
 	for y in $x/*v0 #assumes everything ready
 	do
