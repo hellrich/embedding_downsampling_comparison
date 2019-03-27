@@ -1,5 +1,4 @@
-# Skript für Mehrfachvergleiche zu
-# 'Increasing Word Embedding Reliability by Changing Down-sampling Strategies'
+# Skript for experiments in my thesis "Word Embeddings: Reliability & Semantic Change"
 
 import os
 import scipy.stats           # für Friedman, Wilcoxon-Rangsummen
